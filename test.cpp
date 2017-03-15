@@ -9,13 +9,14 @@ using namespace std;
 
 int main(int argc, char const *argv[]) {
 
-	char errbuf[PCAP_ERRBUF_SIZE], dev[IFACE_NAME];
-	pcap_if_t *interfaces, *temp;
-	pcap_t *pcap;
-	bpf_u_int32 ip_raw, subnet_mask_raw;
-	struct in_addr address;
-	char ip[13];
-	char subnet_mask[13];
+	char errbuf[PCAP_ERRBUF_SIZE]; //Error Buffer for pcap
+	char dev[IFACE_NAME]; //Interface name
+	pcap_if_t *interfaces, *temp; // Interfaces
+	pcap_t *pcap; // -----
+	bpf_u_int32 ip_raw, subnet_mask_raw; //Raw ip and subnet mask
+	struct in_addr address; // For converion from raw int ip to dotted ip
+	char ip[13]; // IP
+	char subnet_mask[13]; //Subnet mask
 	int iface_sel, i, lookup_return_code;
 
 	if(pcap_findalldevs(&interfaces, errbuf)==-1) {
@@ -28,7 +29,7 @@ int main(int argc, char const *argv[]) {
 		cout<<i<<": "<<temp->name<<endl;
 	}
 
-	cout<<"Choose interface"<<endstream;
+	cout<<"Choose interface"<<endstream;	// Selecting an interface out of available
 	cin>>iface_sel;
 	while(iface_sel-1)
 		interfaces=interfaces->next, iface_sel--;
@@ -47,7 +48,7 @@ int main(int argc, char const *argv[]) {
 		exit(-1);
 	}
 
-	cout<<ip_raw<<endl;
+	// Conversion from raw to dotter network address
 
 	address.s_addr = ip_raw;
 	strcpy(ip, inet_ntoa(address));
@@ -76,5 +77,7 @@ int main(int argc, char const *argv[]) {
 		exit(-1);
 	}
 	cout<<"Running..."<<endl;*/
+
+	
 	return 0;
 }
