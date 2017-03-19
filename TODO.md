@@ -1,5 +1,5 @@
 # ISSUES:
-  * ***Negetive*** payload length. Probably wrong calculation or wrong protocol followed.
+  * [solved] ***Negetive*** payload length. Probably wrong calculation or wrong protocol followed.
 
 # ENHANCEMENTS:
   * Print the *protocol* of the packet ex: tcp, udp

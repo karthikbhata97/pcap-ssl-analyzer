@@ -6,6 +6,7 @@
 #include <time.h>
 #include <netinet/in.h>
 #include <netinet/if_ether.h>
+#include "packet_structures.h"
 
 #define endstream endl<<"-> ";
 #define IFACE_NAME 100
@@ -153,7 +154,14 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   int payload_len;
   int total_header_len;
 
+  struct sniff_ethernet *ethernet;
+  struct sniff_ip *ip;
+  struct sniff_tcp *tcp;
+
+  ethernet = (struct sniff_ethernet*) packet;
+
   ip_header = packet + eth_header_len;
+  ip = (struct sniff_ip*) ip_header;
 
   ip_header_len = ((*ip_header) & 0x0F); //Lower nibble on IP header at  stating byte
 
@@ -166,18 +174,27 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   }
 
   tcp_header = packet + eth_header_len + ip_header_len;
+  tcp = (struct sniff_tcp*) tcp_header;
 
-  tcp_header_len = ((*(tcp_header) + 12) & 0xF0) >> 4; // Offset 12 with upper nibble has header length
+  tcp_header_len = ((*(tcp_header + 12)) & 0xF0) >> 4; // Offset 12 with upper nibble has header length
 
   tcp_header_len *= 4; // ?? again something with 32 bit segments
 
   total_header_len = eth_header_len + ip_header_len + tcp_header_len; // Total offset for payload
+  payload_len = packet_header.len - total_header_len; // Payload length
+
+  if(tcp_header_len<20 || ip_header_len<20 ||  payload_len < 0) {
+    cout<<"Invalid packet size"<<endl;
+    endpacket();
+    return;
+  }
+
+
   cout<<"Total header size: "<<total_header_len<<"bytes"<<endl;
   cout<<"Ethernet header length: "<<eth_header_len<<"bytes"<<endl;
   cout<<"IP header length: "<<ip_header_len<<"bytes"<<endl;
   cout<<"TCP header length: "<<tcp_header_len<<"bytes"<<endl;
 
-  payload_len = packet_header.len - total_header_len; // Payload length
   cout<<endl<<"Payload length is: "<<payload_len<<"bytes"<<endl;
 
   payload = packet + total_header_len; // Payload starting location
