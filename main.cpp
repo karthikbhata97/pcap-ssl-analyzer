@@ -38,7 +38,7 @@ int main(int argc, char const *argv[]) {
 	const u_char *packet;
 	struct pcap_pkthdr packet_header;
 	int promisc = 1;
-	int timeout_limit = 10000;
+	int timeout_limit = 1000;
 	int iface_sel, i, lookup_return_code;
   struct bpf_program filter;
   char filter_exp[] = "";
@@ -100,9 +100,9 @@ int main(int argc, char const *argv[]) {
     exit(-1);
   }
 
-  pcap_set_promisc(handle, 1);
+  pcap_set_promisc(handle, promisc);
   pcap_set_snaplen(handle, 2048);
-  pcap_set_timeout(handle, 1000);
+  pcap_set_timeout(handle, timeout_limit);
 
   if (pcap_activate(handle) !=0 ) {
     cerr<<"Error activating capture handle. "<<pcap_geterr(handle)<<endl;
