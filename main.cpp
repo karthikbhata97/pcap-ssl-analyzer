@@ -7,6 +7,7 @@
 #include <netinet/in.h>
 #include <netinet/if_ether.h>
 #include "packet_structures.h"
+#include "print_payload.h"
 
 #define endstream endl<<"-> "
 #define IFACE_NAME 100
@@ -20,9 +21,8 @@ void my_packet_handler(
 );
 void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header);
 void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header);
+int tcp_payload(const u_char *packet, int offset);
 void endpacket();
-void print_payload(const u_char *, int );
-void print_hex_ascii_line(const u_char *, int, int);
 
 
 int main(int argc, char const *argv[]) {
@@ -175,13 +175,13 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
   int eth_header_len = 14; // Stanard onstant source_MAC(6) + dest_MAC(6) + ether_header type (2) = 14
   int ip_header_len;
-  int tcp_header_len;
   int payload_len;
+  int protocol_header_len;
   int total_header_len;
+  char protocol_name[10];
 
   struct sniff_ethernet *ethernet;
   struct sniff_ip *ip;
-  struct sniff_tcp *tcp;
 
   ethernet = (struct sniff_ethernet*) packet;
 
@@ -190,40 +190,42 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
   ip_header_len = ((*ip_header) & 0x0F); //Lower nibble on IP header at  stating byte
 
-  ip_header_len *= 4; // ?? Something to do with 32 bit segments so mul by 4
+  ip_header_len = ip_header_len * 4; // ?? Something to do with 32 bit segments so mul by 4
 
-  if(*(ip_header+9) != IPPROTO_TCP) { // 10th byte represents protocol
-    cout<<"Currently analyzing only TCP protocols"<<endl;
-    endpacket();
-    return;
+  switch (*(ip_header+9)) { // 10th byte represents protocol
+    case IPPROTO_TCP:
+      strcpy(protocol_name, "TCP");
+      protocol_header_len = tcp_payload(packet, eth_header_len + ip_header_len);
+      if(protocol_header_len<20) {
+        cout<<"Invalid packet size"<<endl;
+        endpacket();
+        return;
+      }
+      break;
+
+    default:
+      cout<<"Currently analyzing only TCP protocols"<<endl;
+      endpacket();
+      return;
   }
 
-  tcp_header = packet + eth_header_len + ip_header_len;
-  tcp = (struct sniff_tcp*) tcp_header;
-
-  tcp_header_len = ((*(tcp_header + 12)) & 0xF0) >> 4; // Offset 12 with upper nibble has header length
-
-  tcp_header_len *= 4; // ?? again something with 32 bit segments
-
-  total_header_len = eth_header_len + ip_header_len + tcp_header_len; // Total offset for payload
+  total_header_len = eth_header_len + ip_header_len + protocol_header_len; // Total offset for payload
   payload_len = packet_header.len - total_header_len; // Payload length
 
-  if(tcp_header_len<20 || ip_header_len<20 ||  payload_len < 0) {
+  if(ip_header_len<20 ||  payload_len < 0) {
     cout<<"Invalid packet size"<<endl;
     endpacket();
     return;
   }
 
+  payload = packet + total_header_len; // Payload starting location
 
   cout<<"Total header size: "<<total_header_len<<"bytes"<<endl;
   cout<<"Ethernet header length: "<<eth_header_len<<"bytes"<<endl;
   cout<<"IP header length: "<<ip_header_len<<"bytes"<<endl;
-  cout<<"TCP header length: "<<tcp_header_len<<"bytes"<<endl;
-
+  cout<<protocol_name<<" header length: "<<protocol_header_len<<"bytes"<<endl;
   cout<<endl<<"Payload length is: "<<payload_len<<"bytes"<<endl;
 
-  payload = packet + total_header_len; // Payload starting location
-  printf("Memory address where payload begins: %p\n\n", payload);
   print_payload(payload, payload_len);
 
   endpacket();
@@ -231,108 +233,19 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
 }
 
-/*
- * print packet payload data (avoid printing binary data)
- */
-void
-print_payload(const u_char *payload, int len)
-{
 
-	int len_rem = len;
-	int line_width = 16;			/* number of bytes per line */
-	int line_len;
-	int offset = 0;					/* zero-based offset counter */
-	const u_char *ch = payload;
+int tcp_payload(const u_char *packet, int offset) {
+  const u_char *tcp_header = packet + offset;
+  struct sniff_tcp *tcp = (struct sniff_tcp*) tcp_header;
 
-	if (len <= 0)
-		return;
+  int tcp_header_len = ((*(tcp_header + 12)) & 0xF0) >> 4; // Offset 12 with upper nibble has header length
 
-	/* data fits on one line */
-	if (len <= line_width) {
-		print_hex_ascii_line(ch, len, offset);
-		return;
-	}
-
-	/* data spans multiple lines */
-	for ( ;; ) {
-		/* compute current line length */
-		line_len = line_width % len_rem;
-		/* print line */
-		print_hex_ascii_line(ch, line_len, offset);
-		/* compute total remaining */
-		len_rem = len_rem - line_len;
-		/* shift pointer to remaining bytes to print */
-		ch = ch + line_len;
-		/* add offset */
-		offset = offset + line_width;
-		/* check if we have line width chars or less */
-		if (len_rem <= line_width) {
-			/* print last line and get out */
-			print_hex_ascii_line(ch, len_rem, offset);
-			break;
-		}
-	}
-
-return;
+  tcp_header_len *= 4; // ?? again something with 32 bit segments
+  return tcp_header_len;
 }
-
-/*
- * print data in rows of 16 bytes: offset   hex   ascii
- *
- * 00000   47 45 54 20 2f 20 48 54  54 50 2f 31 2e 31 0d 0a   GET / HTTP/1.1..
- */
-void
-print_hex_ascii_line(const u_char *payload, int len, int offset)
-{
-
-	int i;
-	int gap;
-	const u_char *ch;
-
-	/* offset */
-	printf("%05d   ", offset);
-
-	/* hex */
-	ch = payload;
-	for(i = 0; i < len; i++) {
-		printf("%02x ", *ch);
-		ch++;
-		/* print extra space after 8th byte for visual aid */
-		if (i == 7)
-			printf(" ");
-	}
-	/* print space to handle line less than 8 bytes */
-	if (len < 8)
-		printf(" ");
-
-	/* fill hex gap with spaces if not full line */
-	if (len < 16) {
-		gap = 16 - len;
-		for (i = 0; i < gap; i++) {
-			printf("   ");
-		}
-	}
-	printf("   ");
-
-	/* ascii (if printable) */
-	ch = payload;
-	for(i = 0; i < len; i++) {
-		if (isprint(*ch))
-			printf("%c", *ch);
-		else
-			printf(".");
-		ch++;
-	}
-
-	printf("\n");
-
-return;
-}
-
-
-
 
 void endpacket() {
+  cout<<endl;
   for(int i=0;i<64;i++)
     cout<<"-";
   cout<<endl;
