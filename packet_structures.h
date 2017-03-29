@@ -51,3 +51,10 @@ struct sniff_tcp {
   u_short th_sum;		/* checksum */
   u_short th_urp;		/* urgent pointer */
 };
+
+struct sniff_udp {
+  u_short uh_sport;               /* source port */
+  u_short uh_dport;               /* destination port */
+  u_short uh_ulen;                /* udp length */
+  u_short uh_sum;                 /* udp checksum */
+};

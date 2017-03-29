@@ -11,7 +11,7 @@
 
 #define endstream endl<<"-> "
 #define IFACE_NAME 100
-
+#define SIZE_UDP 8
 using namespace std;
 
 void my_packet_handler(
@@ -22,6 +22,7 @@ void my_packet_handler(
 void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header);
 void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header);
 int tcp_payload(const u_char *packet, int offset);
+int udp_payload(const u_char *packet, int offset);
 void endpacket();
 
 
@@ -203,6 +204,11 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
       }
       break;
 
+    case IPPROTO_UDP:
+      strcpy(protocol_name, "UDP");
+      protocol_header_len = udp_payload(packet, eth_header_len + ip_header_len);
+      break;
+
     default:
       cout<<"Currently analyzing only TCP protocols"<<endl;
       endpacket();
@@ -243,6 +249,13 @@ int tcp_payload(const u_char *packet, int offset) {
   tcp_header_len *= 4; // ?? again something with 32 bit segments
   return tcp_header_len;
 }
+
+int udp_payload(const u_char *packet, int offset) {
+  const u_char *udp_header = packet + offset;
+  struct sniff_udp *udp = (struct sniff_udp*) udp_header;
+  return SIZE_UDP;
+}
+
 
 void endpacket() {
   cout<<endl;
