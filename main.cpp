@@ -23,6 +23,7 @@ void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header);
 void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header);
 int tcp_payload(const u_char *packet, int offset);
 int udp_payload(const u_char *packet, int offset);
+void print_ip(struct sniff_ip*);
 void endpacket();
 
 
@@ -188,7 +189,7 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
   ip_header = packet + eth_header_len;
   ip = (struct sniff_ip*) ip_header;
-
+  print_ip(ip);
   ip_header_len = ((*ip_header) & 0x0F); //Lower nibble on IP header at  stating byte
 
   ip_header_len = ip_header_len * 4; // ?? Something to do with 32 bit segments so mul by 4
@@ -254,6 +255,28 @@ int udp_payload(const u_char *packet, int offset) {
   const u_char *udp_header = packet + offset;
   struct sniff_udp *udp = (struct sniff_udp*) udp_header;
   return SIZE_UDP;
+}
+
+void print_ip(struct sniff_ip* ip) {
+  char ipaddr[13]; // IP
+  struct in_addr address;
+  struct in_addr from = ip->ip_src;
+  struct in_addr to = ip->ip_dst;
+  address = from;
+  strcpy(ipaddr, inet_ntoa(address));
+  if(ipaddr == NULL) {
+    cerr<<"Couldn't get ip address of the device"<<endl;
+    exit(-1);
+  }
+  cout<<"Source ip: "<<ipaddr<<endl;
+  address = to;
+  strcpy(ipaddr, inet_ntoa(address));
+  if(ipaddr == NULL) {
+    cerr<<"Couldn't get ip address of the device"<<endl;
+    exit(-1);
+  }
+  cout<<"Destination ip: "<<ipaddr<<endl;
+  return;
 }
 
 
