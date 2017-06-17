@@ -10,6 +10,7 @@
 #include "packet_structures.h"
 #include "print_payload.h"
 #include "ssl_alerts.h"
+#include "handshake.h"
 
 #define endstream endl<<"-> "
 #define IFACE_NAME 100
@@ -212,8 +213,8 @@ void endpacket() {
 
 void analyze_ssl(const u_char *ssl, int payload_len) {
   int parsed = 0;
-  cout<<endl;
   while(payload_len-parsed > 0) {
+    cout<<endl;
     // print_payload(ssl, payload_len);
     int type, version, length;
     type = (*(int *)ssl&0x00FF);
@@ -264,7 +265,7 @@ void analyze_ssl(const u_char *ssl, int payload_len) {
       cout<<"failed to decode"<<endl;
       break;
     }
-    cout<<endl<<endl;
+    cout<<endl;
   }
   return;
 }
@@ -281,8 +282,8 @@ void manage_alert(const u_char *alert, int length)
     cout<<"Fatal"<<endl;
     break;
     default:
-    cout<<"Invalid alert"<<endl;
-    break;
+    cout<<"Encrypted alert"<<endl;
+    return;
   }
 
   short int description = (*(short int *)alert & 0xFF00) >> 8;
@@ -300,6 +301,7 @@ void manage_data(const u_char *data, int length)
 void manage_handshake(const u_char *handshake, int length)
 {
   cout<<"HANDSHAKE"<<endl;
+  handshake_type(handshake);
 }
 
 void manage_ccs(const u_char *ccs, int length) {

@@ -1,0 +1,50 @@
+void hello_request(const u_char *body)
+{
+return;
+}
+
+void client_hello(const u_char *body)
+{
+return;
+}
+
+void server_hello(const u_char *body)
+{
+return;
+}
+
+void certificate(const u_char *body)
+{
+return;
+}
+
+void server_key_exchange (const u_char *body)
+{
+return;
+}
+
+void certificate_request(const u_char *body)
+{
+return;
+}
+
+void server_hello_done(const u_char *body)
+{
+return;
+}
+
+void certificate_verify(const u_char *body)
+{
+return;
+}
+
+void client_key_exchange(const u_char *body)
+{
+return;
+}
+
+void finished(const u_char *body)
+{
+return;
+}
+

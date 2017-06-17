@@ -81,7 +81,7 @@ int print_alert(short int description) {
           cout<<"unsupported_extension"<<endl;
           break;
     default:
-          return 0;
+          cout<<"encrypted alert"<<endl;
   }
   return 1;
 }
