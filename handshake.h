@@ -15,20 +15,37 @@ void finished(const u_char *);
 void print_hex(const u_char *, int);
 void print_ciphersuites(const u_char *, int );
 void print_certificates(const u_char *, int);
+void print_distinguished(const u_char *, int);
+
+void print_distinguished(const u_char *data, int len) {
+  int parsed = 0;
+  short int name_len;
+  while(len-parsed) {
+    name_len = *(short int*)data;
+    name_len = (name_len>>8) | (name_len<<8);
+    cout<<"Distinguished name length: "<<name_len<<endl;
+    data = data + 2;
+    print_payload(data, name_len);
+    parsed += name_len + 2;
+    data = data + name_len;
+  }
+  return;
+}
 
 void print_certificates(const u_char *certs, int len) {
   int parsed = 0;
   int a, b, c, certificate_length;
-  while(len-parsed) {
+  while(len-parsed>0) {
     a = (int)*(certs); // second
     b = (int)*(certs+1); // third
     c = (int)*(certs+2); // furth byte
     certificate_length = (a<<16) + (b<<8) + (c);
+    if(!certificate_length) return;
     cout<<"certificate length: "<<certificate_length<<endl;
     certs = certs + 3;
     print_payload(certs, certificate_length);
     certs = certs + certificate_length;
-    parsed = 3 + certificate_length;
+    parsed += 3 + certificate_length;
   }
   return;
 }
@@ -190,7 +207,7 @@ void server_hello(const u_char *body)
 {
   int a = (int)*(body+1); // second
   int b = (int)*(body+2); // third
-  int c = (int)*(body+3); // furth byte
+  int c = (int)*(body+3); // fourth byte
   int length = (a<<16) + (b<<8) + (c);
   cout<<"client hello length: "<<length<<endl;
   body = body + 4;
@@ -269,11 +286,44 @@ void certificate(const u_char *body)
 
 void server_key_exchange (const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
+
+  cout<<"premaster key and algorithm parameters"<<endl;
+  print_payload(body, length);
+
   return;
 }
 
 void certificate_request(const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
+
+  int types = (int)*body;
+  cout<<"Certificate types: "<<types<<endl;
+  body = body + 1;
+
+  for(int i=0;i<types;i++) {
+    cout<<"Certificate type: "<<((int)*(body+i))<<endl;
+  }
+  body = body + types;
+
+  short int dist_names_len = *(short int*)body;
+  dist_names_len = (dist_names_len>>8) | (dist_names_len<<8);
+  cout<<"Distinguished names length: "<<dist_names_len<<endl;
+  body = body + 2;
+
+  print_distinguished(body, dist_names_len);
+
   return;
 }
 
@@ -290,6 +340,16 @@ void server_hello_done(const u_char *body)
 
 void certificate_verify(const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
+
+  cout<<"signed hash: "<<endl;
+  print_payload(body, length);
+
   return;
 }
 
