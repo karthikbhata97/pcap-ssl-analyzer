@@ -1,11 +1,14 @@
-Compile: 
+Analyzes the captured packets frim pcap file.
+Now supports only SSL
+
+Compile:
 ```
-g++ test.cpp -lpcap -ocapture
+g++ read_packet.cpp -lpcap -ocapture
 ```
 
 Make sure you have **root** privilages.
 
-Run: 
+Run:
 ```
 sudo ./capture
 ```

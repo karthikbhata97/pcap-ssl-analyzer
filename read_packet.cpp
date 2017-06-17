@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <iostream>
 #include <pcap.h>
 #include <cstring>
@@ -12,134 +13,46 @@
 #define endstream endl<<"-> "
 #define IFACE_NAME 100
 #define SIZE_UDP 8
+
 using namespace std;
 
-void my_packet_handler(
-    u_char *args,
-    const struct pcap_pkthdr *header,
-    const u_char *packet
-);
 void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header);
 void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header);
 int tcp_payload(const u_char *packet, int offset);
 int udp_payload(const u_char *packet, int offset);
 void print_ip(struct sniff_ip*);
 void endpacket();
+void analyze_ssl(const u_char *ssl, int payload_len);
 
+int main(int argc, char **argv)
+{
+  unsigned int packet_counter=0;
+  struct pcap_pkthdr *header;
+  const u_char *body;
+  const u_char *packet;
+  int ret;
 
-int main(int argc, char const *argv[]) {
-
-	char errbuf[PCAP_ERRBUF_SIZE]; //Error Buffer for pcap
-	char dev[IFACE_NAME]; //Interface name
-	pcap_if_t *interfaces, *temp; // Interfaces
-	pcap_t *handle; // capture handle
-	bpf_u_int32 ip_raw, subnet_mask_raw; //Raw ip and subnet mask
-	struct in_addr address; // For converion from raw int ip to dotted ip
-	char ip[13]; // IP
-	char subnet_mask[13]; //Subnet mask
-	const u_char *packet;
-	struct pcap_pkthdr packet_header;
-	int promisc = 1;
-	int timeout_limit = 1000;
-	int iface_sel, i, lookup_return_code;
-  struct bpf_program filter;
-  char filter_exp[] = "";
-
-	if(pcap_findalldevs(&interfaces, errbuf)==-1) {
-		cerr<<"Couldn't recognize network interfaces"<<endl;
-		cerr<<errbuf<<endl;
-		exit(-1);
-	}
-
-	for(temp=interfaces, i=1;temp;temp=temp->next, i++) {
-		cout<<i<<": "<<temp->name<<endl;
-	}
-
-	cout<<"Choose interface"<<endstream;	// Selecting an interface out of available
-	cin>>iface_sel;
-	while(iface_sel-1)
-		interfaces=interfaces->next, iface_sel--;
-	strcpy(dev, interfaces->name);
-
-	lookup_return_code = pcap_lookupnet(
-		dev,
-		&ip_raw,
-		&subnet_mask_raw,
-		errbuf
-	);
-
-	if(lookup_return_code==-1) {
-		cout<<"Lookup failed"<<endl;
-		cerr<<errbuf<<endl;
-		exit(-1);
-	}
-
-	// Conversion from raw to dotted network address
-
-	address.s_addr = ip_raw;
-	strcpy(ip, inet_ntoa(address));
-	if(ip == NULL) {
-		cerr<<"Couldn't get ip address of the device"<<endl;
-		exit(-1);
-	}
-
-	address.s_addr = subnet_mask_raw;
-	strcpy(subnet_mask, inet_ntoa(address));
-	if(ip == NULL) {
-		cerr<<"Couldn't get subnet mask of the device"<<endl;
-		exit(-1);
-	}
-
-	cout<<"Device: "<<dev<<endl;
-	cout<<"IP: "<<ip<<endl;
-	cout<<"Subnet mask: "<<subnet_mask<<endl;
-	cout<<endl;
-
-	handle = pcap_create(dev, errbuf);
-
-  if (pcap_can_set_rfmon(handle) == 0) {
-    cerr<<"Cannot set monitor mode. "<<pcap_geterr(handle)<<endl;
-    exit(-1);
+  if (argc < 2) {
+    fprintf(stderr, "Usage: %s <pcap>\n", argv[0]);
+    exit(1);
   }
 
-  pcap_set_promisc(handle, promisc);
-  pcap_set_snaplen(handle, 2048);
-  pcap_set_timeout(handle, timeout_limit);
+  pcap_t *handle;
+  char errbuf[PCAP_ERRBUF_SIZE];
+  handle = pcap_open_offline(argv[1], errbuf);
 
-  if (pcap_activate(handle) !=0 ) {
-    cerr<<"Error activating capture handle. "<<pcap_geterr(handle)<<endl;
-    exit(-1);
+  if (handle == NULL) {
+    fprintf(stderr,"Couldn't open pcap file %s: %s\n", argv[1], errbuf);
+    return(2);
   }
 
-
-  if(pcap_compile(handle, &filter, filter_exp, 0, subnet_mask_raw)==-1) {
-    cerr<<"Bad filter - "<<pcap_geterr(handle)<<endl;
-    exit(-1);
+  while ((ret = pcap_next_ex(handle, &header, &body))==1) {
+    print_packet_info(body, *header);
+    payload_analyze(body, *header);
   }
-
-  if(pcap_setfilter(handle, &filter) == -1) {
-    cerr<<"Error setting the filter - "<<pcap_geterr(handle)<<endl;
-    exit(-1);
-  }
-
-	pcap_loop(handle, 0, my_packet_handler, NULL);
-
   pcap_close(handle);
 
   return 0;
-
-}
-
-
-void my_packet_handler(
-    u_char *args,
-    const struct pcap_pkthdr *packet_header,
-    const u_char *packet_body
-)
-{
-    print_packet_info(packet_body, *packet_header);
-    payload_analyze(packet_body, *packet_header);
-    return;
 }
 
 
@@ -198,16 +111,12 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
     case IPPROTO_TCP:
       strcpy(protocol_name, "TCP");
       protocol_header_len = tcp_payload(packet, eth_header_len + ip_header_len);
+      cout<<"TCP packet"<<endl;
       if(protocol_header_len<20) {
         cout<<"Invalid packet size"<<endl;
         endpacket();
         return;
       }
-      break;
-
-    case IPPROTO_UDP:
-      strcpy(protocol_name, "UDP");
-      protocol_header_len = udp_payload(packet, eth_header_len + ip_header_len);
       break;
 
     default:
@@ -219,6 +128,21 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   total_header_len = eth_header_len + ip_header_len + protocol_header_len; // Total offset for payload
   payload_len = packet_header.len - total_header_len; // Payload length
 
+  int tcp_off = eth_header_len + ip_header_len;
+
+  int ports = *(int*)(packet+tcp_off);
+  int src_port = (ports&0x000000FF)<<8 | (ports&0x0000FF00)>>8;
+  cout<<"Source Port: "<<src_port<<endl;
+
+  int dst_port = (ports&0x00FF0000)>>8 | (ports&0xFF000000)>>24;
+  cout<<"Destination Port: "<<dst_port<<endl;
+
+  if(src_port==443 || dst_port==443) {
+    cout<<"SSL encryption!"<<endl;
+    analyze_ssl(packet+tcp_off+protocol_header_len, payload_len);
+  }
+
+
   if(ip_header_len<20 ||  payload_len < 0) {
     cout<<"Invalid packet size"<<endl;
     endpacket();
@@ -227,13 +151,13 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
   payload = packet + total_header_len; // Payload starting location
 
-  cout<<"Total header size: "<<total_header_len<<"bytes"<<endl;
-  cout<<"Ethernet header length: "<<eth_header_len<<"bytes"<<endl;
-  cout<<"IP header length: "<<ip_header_len<<"bytes"<<endl;
-  cout<<protocol_name<<" header length: "<<protocol_header_len<<"bytes"<<endl;
-  cout<<endl<<"Payload length is: "<<payload_len<<"bytes"<<endl;
-
-  print_payload(payload, payload_len);
+  //
+  // cout<<"Total header size: "<<total_header_len<<"bytes"<<endl;
+  // cout<<"Ethernet header length: "<<eth_header_len<<"bytes"<<endl;
+  // cout<<"IP header length: "<<ip_header_len<<"bytes"<<endl;
+  // cout<<protocol_name<<" header length: "<<protocol_header_len<<"bytes"<<endl;
+  // cout<<endl<<"Payload length is: "<<payload_len<<"bytes"<<endl;
+  //
 
   endpacket();
   return;
@@ -249,12 +173,6 @@ int tcp_payload(const u_char *packet, int offset) {
 
   tcp_header_len *= 4; // ?? again something with 32 bit segments
   return tcp_header_len;
-}
-
-int udp_payload(const u_char *packet, int offset) {
-  const u_char *udp_header = packet + offset;
-  struct sniff_udp *udp = (struct sniff_udp*) udp_header;
-  return SIZE_UDP;
 }
 
 void print_ip(struct sniff_ip* ip) {
@@ -285,4 +203,48 @@ void endpacket() {
   for(int i=0;i<64;i++)
     cout<<"-";
   cout<<endl;
+}
+
+void analyze_ssl(const u_char *ssl, int payload_len) {
+  // print_payload(ssl, payload_len);
+  short int type, version, length;
+  type = (*(short int *)ssl&0x00FF);
+  version = *(short int *)(ssl+1);
+  version = (version>>8) | (version<<8);
+  length = *(short int *)(ssl+3);
+  length = (length>>8) | (length<<8);
+
+  cout<<"TYPE: ";
+  switch (type) {
+    case 0x14:
+      cout<<"CHANGE_CIPHER_SPEC"<<endl;
+      break;
+    case 0x15:
+      cout<<"ALERT"<<endl;
+      break;
+    case 0x16:
+      cout<<"HANDSHAKE"<<endl;
+      break;
+    case 0x17:
+      cout<<"APPLICATION_DATA"<<endl;
+      break;
+  }
+
+  cout<<"Version: ";
+  switch (version) {
+    case 0x0300:
+      cout<<"SSL 3.0"<<endl;
+      break;
+    case 0x0301:
+      cout<<"TLS 1.1"<<endl;
+      break;
+    case 0x0302:
+      cout<<"TLS 1.2"<<endl;
+      break;
+    case 0x0303:
+      cout<<"TLS 1.3"<<endl;
+      break;
+  }
+  cout<<"Length: "<<length<<endl;
+  return;
 }
