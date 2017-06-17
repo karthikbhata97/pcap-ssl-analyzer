@@ -294,7 +294,7 @@ void manage_alert(const u_char *alert, int length)
 void manage_data(const u_char *data, int length)
 {
   cout<<"APPLICATION_DATA"<<endl;
-  print_payload(data, length);
+  // print_payload(data, length);
   return;
 }
 
