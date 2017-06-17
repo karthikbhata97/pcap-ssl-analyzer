@@ -3,12 +3,12 @@ Now supports only SSL
 
 Compile:
 ```
-g++ read_packet.cpp -lpcap -ocapture
+g++ read_packet.cpp -lpcap -oread
 ```
-
-Make sure you have **root** privilages.
 
 Run:
 ```
-sudo ./capture
+./read pcap_file
 ```
+
+pcap_file will be captured packet .pcap file [from wireshark etc]
