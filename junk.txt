@@ -1,0 +1,94 @@
+Packet capture length: 995
+Packet total length: 995
+IP packet
+
+Source ip: 127.0.0.1
+Destination ip: 127.0.0.1
+TCP packet
+Source Port: 443
+Destination Port: 38713
+SSL encryption!
+
+Version: SSL 3.0
+Length: 74
+TYPE: HANDSHAKE
+server_hello
+client hello length: 70
+Version: failed to decode
+Random: 444c948ffe81ed9365288a3f8eb6386e2cf68dd0f2c2ad64fcd2d3c16d7d6
+session id length: 32
+session id: a0fb60863d1e76f330feb1fd1a1ed95f67b8ec0d427bff06ec756b147ce98
+cipher suite: 3500
+compression method: 0(null)
+extenstions length: 5635
+follows.. extenstions
+
+
+Version: SSL 3.0
+Length: 836
+TYPE: HANDSHAKE
+certificate
+server hello length: 832
+certificates length: 832
+certificate length: 826
+00000   30 82 03 36 30 82 02 9f  a0 03 02 01 02 02 01 01    0..60...........
+00016   30 0d 06 09 2a 86 48 86  f7 0d 01 01 04 05 00 30    0...*.H........0
+00032   81 a9 31 0b 30 09 06 03  55 04 06 13 02 58 59 31    ..1.0...U....XY1
+00048   15 30 13 06 03 55 04 08  13 0c 53 6e 61 6b 65 20    .0...U....Snake 
+00064   44 65 73 65 72 74 31 13  30 11 06 03 55 04 07 13    Desert1.0...U...
+00080   0a 53 6e 61 6b 65 20 54  6f 77 6e 31 17 30 15 06    .Snake Town1.0..
+00096   03 55 04 0a 13 0e 53 6e  61 6b 65 20 4f 69 6c 2c    .U....Snake Oil,
+00112   20 4c 74 64 31 1e 30 1c  06 03 55 04 0b 13 15 43     Ltd1.0...U....C
+00128   65 72 74 69 66 69 63 61  74 65 20 41 75 74 68 6f    ertificate Autho
+00144   72 69 74 79 31 15 30 13  06 03 55 04 03 13 0c 53    rity1.0...U....S
+00160   6e 61 6b 65 20 4f 69 6c  20 43 41 31 1e 30 1c 06    nake Oil CA1.0..
+00176   09 2a 86 48 86 f7 0d 01  09 01 16 0f 63 61 40 73    .*.H........ca@s
+00192   6e 61 6b 65 6f 69 6c 2e  64 6f 6d 30 1e 17 0d 30    nakeoil.dom0...0
+00208   33 30 33 30 35 31 36 34  37 34 35 5a 17 0d 30 38    30305164745Z..08
+00224   30 33 30 33 31 36 34 37  34 35 5a 30 81 a7 31 0b    0303164745Z0..1.
+00240   30 09 06 03 55 04 06 13  02 58 59 31 15 30 13 06    0...U....XY1.0..
+00256   03 55 04 08 13 0c 53 6e  61 6b 65 20 44 65 73 65    .U....Snake Dese
+00272   72 74 31 13 30 11 06 03  55 04 07 13 0a 53 6e 61    rt1.0...U....Sna
+00288   6b 65 20 54 6f 77 6e 31  17 30 15 06 03 55 04 0a    ke Town1.0...U..
+00304   13 0e 53 6e 61 6b 65 20  4f 69 6c 2c 20 4c 74 64    ..Snake Oil, Ltd
+00320   31 17 30 15 06 03 55 04  0b 13 0e 57 65 62 73 65    1.0...U....Webse
+00336   72 76 65 72 20 54 65 61  6d 31 19 30 17 06 03 55    rver Team1.0...U
+00352   04 03 13 10 77 77 77 2e  73 6e 61 6b 65 6f 69 6c    ....www.snakeoil
+00368   2e 64 6f 6d 31 1f 30 1d  06 09 2a 86 48 86 f7 0d    .dom1.0...*.H...
+00384   01 09 01 16 10 77 77 77  40 73 6e 61 6b 65 6f 69    .....www@snakeoi
+00400   6c 2e 64 6f 6d 30 81 9f  30 0d 06 09 2a 86 48 86    l.dom0..0...*.H.
+00416   f7 0d 01 01 01 05 00 03  81 8d 00 30 81 89 02 81    ...........0....
+00432   81 00 a4 6e 53 14 0a de  2c e3 60 55 9a f2 42 a6    ...nS...,.`U..B.
+00448   af 47 12 2f 17 ce fa ba  dc 4e 63 56 34 b9 ba 73    .G./.....NcV4..s
+00464   4b 78 44 3d c6 6c 69 a4  25 b3 61 02 9d 09 04 3f    KxD=.li.%.a....?
+00480   72 3d d8 27 d3 b0 5a 45  77 b7 36 e4 26 23 cc 12    r=.'..ZEw.6.&#..
+00496   b8 ae de a7 b6 3a 82 3c  7c 24 59 0a f8 96 43 8b    .....:.<|$Y...C.
+00512   a3 29 36 3f 91 7f 5d c7  23 94 29 7f 0a ce 0a bd    .)6?..].#.).....
+00528   8d 9b 2f 19 17 aa d5 8e  ec 66 a2 37 eb 3f 57 53    ../......f.7.?WS
+00544   3c f2 aa bb 79 19 4b 90  7e a7 a3 99 fe 84 4c 89    <...y.K.~.....L.
+00560   f0 3d 02 03 01 00 01 a3  6e 30 6c 30 1b 06 03 55    .=......n0l0...U
+00576   1d 11 04 14 30 12 81 10  77 77 77 40 73 6e 61 6b    ....0...www@snak
+00592   65 6f 69 6c 2e 64 6f 6d  30 3a 06 09 60 86 48 01    eoil.dom0:..`.H.
+00608   86 f8 42 01 0d 04 2d 16  2b 6d 6f 64 5f 73 73 6c    ..B...-.+mod_ssl
+00624   20 67 65 6e 65 72 61 74  65 64 20 63 75 73 74 6f     generated custo
+00640   6d 20 73 65 72 76 65 72  20 63 65 72 74 69 66 69    m server certifi
+00656   63 61 74 65 30 11 06 09  60 86 48 01 86 f8 42 01    cate0...`.H...B.
+00672   01 04 04 03 02 06 40 30  0d 06 09 2a 86 48 86 f7    ......@0...*.H..
+00688   0d 01 01 04 05 00 03 81  81 00 ae 79 79 22 90 75    ...........yy".u
+00704   fd a6 d5 c4 b8 c4 99 4e  1c 05 7c 91 59 be 89 0d    .......N..|.Y...
+00720   3d c6 8c a3 cf f6 ba 23  df b8 ae 44 68 8a 8f b9    =......#...Dh...
+00736   8b cb 12 da e6 a2 ca a5  a6 55 d9 d2 a1 ad ba 9b    .........U......
+00752   2c 44 95 1d 4a 90 59 7f  83 ae 81 5e 3f 92 e0 14    ,D..J.Y....^?...
+00768   41 82 4e 7f 53 fd 10 23  eb 8a eb e9 92 ea 61 f2    A.N.S..#......a.
+00784   8e 19 a1 d3 49 c0 84 34  1e 2e 6e f6 98 e2 87 53    ....I..4..n....S
+00800   d6 55 d9 1a 8a 92 5c ad  dc 1e 1c 30 a7 65 9d c2    .U....\....0.e..
+00816   4f 60 d2 6f db e0 9f 9e  bc 41 16 03 00             O`.o.....A...
+
+
+Version: SSL 3.0
+Length: 4
+TYPE: HANDSHAKE
+server_hello_done
+
+
+----------------------------------------------------------------
