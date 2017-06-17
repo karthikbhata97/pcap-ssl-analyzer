@@ -301,7 +301,7 @@ void manage_data(const u_char *data, int length)
 void manage_handshake(const u_char *handshake, int length)
 {
   cout<<"HANDSHAKE"<<endl;
-  handshake_type(handshake);
+  handshake_type(handshake, length);
 }
 
 void manage_ccs(const u_char *ccs, int length) {

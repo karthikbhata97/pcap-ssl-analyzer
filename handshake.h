@@ -55,7 +55,7 @@ void print_hex(const u_char *data, int len) {
   cout<<endl;
 }
 
-int handshake_type(const u_char *body) {
+int handshake_type(const u_char *body, int length) {
   int type = *(int *)body & 0xFF;
   switch (type) {
     case 0:
@@ -99,7 +99,8 @@ int handshake_type(const u_char *body) {
     finished(body);
     break;
     default:
-    cout<<"Invalid"<<endl;
+    cout<<"Encrypted handshake message"<<endl;
+    print_payload(body, length);
     return 0;
   }
   return 1;
@@ -107,6 +108,12 @@ int handshake_type(const u_char *body) {
 
 void hello_request(const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
   return;
 }
 
@@ -288,10 +295,29 @@ void certificate_verify(const u_char *body)
 
 void client_key_exchange(const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
+
+  cout<<"premaster key and algorithm parameters"<<endl;
+  print_payload(body, length);
+
   return;
 }
 
 void finished(const u_char *body)
 {
+  int a = (int)*(body+1); // second
+  int b = (int)*(body+2); // third
+  int c = (int)*(body+3); // furth byte
+  int length = (a<<16) + (b<<8) + (c);
+  cout<<"length: "<<length<<endl;
+  body = body + 4;
+
+  cout<<"signed hash: "<<endl;
+  print_payload(body, length);
   return;
 }
