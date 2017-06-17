@@ -9,6 +9,7 @@
 #include <netinet/if_ether.h>
 #include "packet_structures.h"
 #include "print_payload.h"
+#include "ssl_alerts.h"
 
 #define endstream endl<<"-> "
 #define IFACE_NAME 100
@@ -23,6 +24,10 @@ int udp_payload(const u_char *packet, int offset);
 void print_ip(struct sniff_ip*);
 void endpacket();
 void analyze_ssl(const u_char *ssl, int payload_len);
+void manage_handshake(const u_char *, int);
+void manage_alert(const u_char *, int);
+void manage_data(const u_char *, int);
+void manage_ccs(const u_char *, int);
 
 int main(int argc, char **argv)
 {
@@ -57,19 +62,19 @@ int main(int argc, char **argv)
 
 
 void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header) {
-    cout<<"Packet capture length: "<<packet_header.caplen<<endl;
-    cout<<"Packet total length: "<<packet_header.len<<endl;
+  cout<<"Packet capture length: "<<packet_header.caplen<<endl;
+  cout<<"Packet total length: "<<packet_header.len<<endl;
 
-    struct ether_header *eth_header;
-    eth_header = (struct ether_header *) packet;
+  struct ether_header *eth_header;
+  eth_header = (struct ether_header *) packet;
 
-		if(ntohs(eth_header->ether_type) == ETHERTYPE_IP)
-			cout<<"IP packet"<<endl;
-		else if(ntohs(eth_header->ether_type) == ETHERTYPE_ARP)
-			cout<<"ARP packet"<<endl;
-		else if(ntohs(eth_header->ether_type) == ETHERTYPE_REVARP)
-			cout<<"Reverse ARP packet"<<endl;
-		cout<<endl;
+  if(ntohs(eth_header->ether_type) == ETHERTYPE_IP)
+  cout<<"IP packet"<<endl;
+  else if(ntohs(eth_header->ether_type) == ETHERTYPE_ARP)
+  cout<<"ARP packet"<<endl;
+  else if(ntohs(eth_header->ether_type) == ETHERTYPE_REVARP)
+  cout<<"Reverse ARP packet"<<endl;
+  cout<<endl;
 
 }
 
@@ -109,20 +114,20 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
 
   switch (*(ip_header+9)) { // 10th byte represents protocol
     case IPPROTO_TCP:
-      strcpy(protocol_name, "TCP");
-      protocol_header_len = tcp_payload(packet, eth_header_len + ip_header_len);
-      cout<<"TCP packet"<<endl;
-      if(protocol_header_len<20) {
-        cout<<"Invalid packet size"<<endl;
-        endpacket();
-        return;
-      }
-      break;
-
-    default:
-      cout<<"Currently analyzing only TCP protocols"<<endl;
+    strcpy(protocol_name, "TCP");
+    protocol_header_len = tcp_payload(packet, eth_header_len + ip_header_len);
+    cout<<"TCP packet"<<endl;
+    if(protocol_header_len<20) {
+      cout<<"Invalid packet size"<<endl;
       endpacket();
       return;
+    }
+    break;
+
+    default:
+    cout<<"Currently analyzing only TCP protocols"<<endl;
+    endpacket();
+    return;
   }
 
   total_header_len = eth_header_len + ip_header_len + protocol_header_len; // Total offset for payload
@@ -201,50 +206,103 @@ void print_ip(struct sniff_ip* ip) {
 void endpacket() {
   cout<<endl;
   for(int i=0;i<64;i++)
-    cout<<"-";
+  cout<<"-";
   cout<<endl;
 }
 
 void analyze_ssl(const u_char *ssl, int payload_len) {
-  // print_payload(ssl, payload_len);
-  short int type, version, length;
-  type = (*(short int *)ssl&0x00FF);
-  version = *(short int *)(ssl+1);
-  version = (version>>8) | (version<<8);
-  length = *(short int *)(ssl+3);
-  length = (length>>8) | (length<<8);
+  int parsed = 0;
+  cout<<endl;
+  while(payload_len-parsed > 0) {
+    // print_payload(ssl, payload_len);
+    int type, version, length;
+    type = (*(int *)ssl&0x00FF);
+    version = *(int *)(ssl+1) & 0xFFFF;
+    version = ((version&0xFF00)>>8) | ((version&0x00FF)<<8);
+    length = *(int *)(ssl+3) & 0xFFFF;
+    length = ((length&0xFF00)>>8) | ((length&0x00FF)<<8);
+    parsed += (length + 5);
+    const u_char *ssl_body = ssl + 5;
+    ssl = ssl + length + 5;
 
-  cout<<"TYPE: ";
-  switch (type) {
-    case 0x14:
-      cout<<"CHANGE_CIPHER_SPEC"<<endl;
-      break;
-    case 0x15:
-      cout<<"ALERT"<<endl;
-      break;
-    case 0x16:
-      cout<<"HANDSHAKE"<<endl;
-      break;
-    case 0x17:
-      cout<<"APPLICATION_DATA"<<endl;
-      break;
-  }
-
-  cout<<"Version: ";
-  switch (version) {
-    case 0x0300:
+    cout<<"Version: ";
+    switch (version) {
+      case 0x0300:
       cout<<"SSL 3.0"<<endl;
       break;
-    case 0x0301:
+      case 0x0301:
       cout<<"TLS 1.1"<<endl;
       break;
-    case 0x0302:
+      case 0x0302:
       cout<<"TLS 1.2"<<endl;
       break;
-    case 0x0303:
+      case 0x0303:
       cout<<"TLS 1.3"<<endl;
       break;
+      default:
+      cout<<"failed to decode"<<endl;
+      break;
+    }
+
+    cout<<"Length: "<<length<<endl;
+
+    cout<<"TYPE: ";
+    switch (type) {
+      case 0x14:
+      manage_ccs(ssl_body, length);
+      break;
+      case 0x15:
+      manage_alert(ssl_body, length);
+      break;
+      case 0x16:
+      manage_handshake(ssl_body, length);
+      break;
+      case 0x17:
+      manage_data(ssl_body, length);
+      break;
+      default:
+      cout<<"failed to decode"<<endl;
+      break;
+    }
+    cout<<endl<<endl;
   }
-  cout<<"Length: "<<length<<endl;
+  return;
+}
+
+void manage_alert(const u_char *alert, int length)
+{
+  cout<<"ALERT"<<endl;
+  short int severity = (*(short int *)alert & 0x00FF);
+  switch (severity) {
+    case 0x01:
+    cout<<"Warning"<<endl;
+    break;
+    case 0x02:
+    cout<<"Fatal"<<endl;
+    break;
+    default:
+    cout<<"Invalid alert"<<endl;
+    break;
+  }
+
+  short int description = (*(short int *)alert & 0xFF00) >> 8;
+  print_alert(description);
+  return;
+}
+
+void manage_data(const u_char *data, int length)
+{
+  cout<<"APPLICATION_DATA"<<endl;
+  print_payload(data, length);
+  return;
+}
+
+void manage_handshake(const u_char *handshake, int length)
+{
+  cout<<"HANDSHAKE"<<endl;
+}
+
+void manage_ccs(const u_char *ccs, int length) {
+  cout<<"CHANGE_CIPHER_SPEC"<<endl;
   return;
 }
