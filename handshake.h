@@ -16,6 +16,7 @@ void print_hex(const u_char *, int);
 void print_ciphersuites(const u_char *, int );
 void print_certificates(const u_char *, int);
 void print_distinguished(const u_char *, int);
+void print_extentions(const u_char *, int);
 
 void print_distinguished(const u_char *data, int len) {
   int parsed = 0;
@@ -197,7 +198,7 @@ void client_hello(const u_char *body)
   cout<<"extenstions length: "<<extenstions_len<<endl;
   body = body + 2;
 
-  cout<<"follows.. extenstions"<<endl;
+  print_extentions(body, extenstions_len);
   body = body + extenstions_len;
 
   return;
@@ -257,7 +258,7 @@ void server_hello(const u_char *body)
   cout<<"extenstions length: "<<extenstions_len<<endl;
   body = body + 2;
 
-  cout<<"follows.. extenstions"<<endl;
+  print_extentions(body, extenstions_len);
   body = body + extenstions_len;
   return;
 }
@@ -379,5 +380,27 @@ void finished(const u_char *body)
 
   cout<<"signed hash: "<<endl;
   print_payload(body, length);
+  return;
+}
+
+void print_extentions(const u_char *data, int ext_len)
+{
+  int parsed = 0;
+  short int type, length;
+  while(ext_len-parsed) {
+    type = *(short int*)data;
+    type = (type>>8) | (type<<8);
+    data = data + 2;
+    cout<<"Type: "<<hex<<type<<dec<<endl;
+    length = *(short int*)data;
+    length = (length>>8) | (length<<8);
+    cout<<"Length: "<<length<<endl;
+    cout<<"extenstion: "<<endl;
+    data = data + 2;
+    print_payload(data, length);
+    data = data + length;
+    parsed += 4 + length;
+    cout<<endl;
+  }
   return;
 }
