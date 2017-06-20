@@ -4,7 +4,7 @@ using namespace std;
 int handshake_type(const u_char *);
 void hello_request(const u_char *);
 void client_hello(const u_char *);
-void server_hello(const u_char *);
+void server_hello(const u_char *, const u_char *);
 void certificate(const u_char *);
 void server_key_exchange (const u_char *);
 void certificate_request(const u_char *);
@@ -86,7 +86,7 @@ int handshake_type(const u_char *body, int length) {
     break;
     case 2:
     cout<<"server_hello"<<endl;
-    server_hello(body);
+    server_hello(body, body+length);
     break;
     case 11:
     cout<<"certificate"<<endl;
@@ -150,13 +150,13 @@ void client_hello(const u_char *body)
     cout<<"SSL 3.0"<<endl;
     break;
     case 0x0301:
-    cout<<"TLS 1.1"<<endl;
+    cout<<"TLS 1.0"<<endl;
     break;
     case 0x0302:
-    cout<<"TLS 1.2"<<endl;
+    cout<<"TLS 1.1"<<endl;
     break;
     case 0x0303:
-    cout<<"TLS 1.3"<<endl;
+    cout<<"TLS 1.2"<<endl;
     break;
     default:
     cout<<"failed to decode"<<endl;
@@ -204,7 +204,7 @@ void client_hello(const u_char *body)
   return;
 }
 
-void server_hello(const u_char *body)
+void server_hello(const u_char *body, const u_char * limit)
 {
   int a = (int)*(body+1); // second
   int b = (int)*(body+2); // third
@@ -219,13 +219,13 @@ void server_hello(const u_char *body)
     cout<<"SSL 3.0"<<endl;
     break;
     case 0x0301:
-    cout<<"TLS 1.1"<<endl;
+    cout<<"TLS 1.0"<<endl;
     break;
     case 0x0302:
-    cout<<"TLS 1.2"<<endl;
+    cout<<"TLS 1.1"<<endl;
     break;
     case 0x0303:
-    cout<<"TLS 1.3"<<endl;
+    cout<<"TLS 1.2"<<endl;
     break;
     default:
     cout<<"failed to decode"<<endl;
@@ -253,13 +253,14 @@ void server_hello(const u_char *body)
   cout<<"compression method: "<<compression_method<<"(null)"<<endl;
   body = body + 1;
 
-  short int extenstions_len = *(short int*)body;
-  extenstions_len = (extenstions_len>>8) | (extenstions_len<<8);
-  cout<<"extenstions length: "<<extenstions_len<<endl;
-  body = body + 2;
-
-  print_extentions(body, extenstions_len);
-  body = body + extenstions_len;
+  if(body<limit) {
+    short int extenstions_len = *(short int*)body;
+    extenstions_len = (extenstions_len>>8) | (extenstions_len<<8);
+    cout<<"extenstions length: "<<extenstions_len<<endl;
+    body = body + 2;
+    print_extentions(body, extenstions_len);
+    body = body + extenstions_len;
+  }
   return;
 }
 
@@ -387,7 +388,7 @@ void print_extentions(const u_char *data, int ext_len)
 {
   int parsed = 0;
   short int type, length;
-  while(ext_len-parsed) {
+  while(ext_len-parsed>0) {
     type = *(short int*)data;
     type = (type>>8) | (type<<8);
     data = data + 2;

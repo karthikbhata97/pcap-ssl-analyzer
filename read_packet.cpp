@@ -232,13 +232,13 @@ void analyze_ssl(const u_char *ssl, int payload_len) {
       cout<<"SSL 3.0"<<endl;
       break;
       case 0x0301:
-      cout<<"TLS 1.1"<<endl;
+      cout<<"TLS 1.0"<<endl;
       break;
       case 0x0302:
-      cout<<"TLS 1.2"<<endl;
+      cout<<"TLS 1.1"<<endl;
       break;
       case 0x0303:
-      cout<<"TLS 1.3"<<endl;
+      cout<<"TLS 1.2"<<endl;
       break;
       default:
       cout<<"failed to decode"<<endl;
@@ -294,7 +294,7 @@ void manage_alert(const u_char *alert, int length)
 void manage_data(const u_char *data, int length)
 {
   cout<<"APPLICATION_DATA"<<endl;
-  print_payload(data, length);
+  // print_payload(data, length);
   return;
 }
 
