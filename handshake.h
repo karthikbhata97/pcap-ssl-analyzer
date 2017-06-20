@@ -1,7 +1,8 @@
 #include <iostream>
 using namespace std;
 
-int handshake_type(const u_char *);
+
+// For each type of packet function is defined to parse and print the data
 void hello_request(const u_char *);
 void client_hello(const u_char *);
 void server_hello(const u_char *, const u_char *);
@@ -17,6 +18,7 @@ void print_ciphersuites(const u_char *, int );
 void print_certificates(const u_char *, int);
 void print_distinguished(const u_char *, int);
 void print_extentions(const u_char *, int);
+int handshake_type(const u_char *);
 
 void print_distinguished(const u_char *data, int len) {
   int parsed = 0;

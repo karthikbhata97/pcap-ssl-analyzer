@@ -45,6 +45,7 @@ int main(int argc, char **argv)
 
   pcap_t *handle;
   char errbuf[PCAP_ERRBUF_SIZE];
+  // open a pcap_t handle for parsing the packets from the input .pcap file (argv[1])
   handle = pcap_open_offline(argv[1], errbuf);
 
   if (handle == NULL) {
@@ -52,6 +53,7 @@ int main(int argc, char **argv)
     return(2);
   }
 
+  // loop throught the packets
   while ((ret = pcap_next_ex(handle, &header, &body))==1) {
     print_packet_info(body, *header);
     payload_analyze(body, *header);
@@ -61,7 +63,7 @@ int main(int argc, char **argv)
   return 0;
 }
 
-
+// Basic packet data
 void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header) {
   cout<<"Packet capture length: "<<packet_header.caplen<<endl;
   cout<<"Packet total length: "<<packet_header.len<<endl;
@@ -80,6 +82,7 @@ void print_packet_info(const u_char *packet, struct pcap_pkthdr packet_header) {
 }
 
 
+// parsing the packet by  analyzing headers and it's encapsulated data
 void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   struct ether_header *eth_header;
   eth_header = (struct ether_header *) packet;
@@ -104,8 +107,10 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   struct sniff_ethernet *ethernet;
   struct sniff_ip *ip;
 
+  // outermost encapsulation ethernet
   ethernet = (struct sniff_ethernet*) packet;
 
+  // ip packet after 14 bytes of main packet
   ip_header = packet + eth_header_len;
   ip = (struct sniff_ip*) ip_header;
   print_ip(ip);
@@ -131,6 +136,7 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
     return;
   }
 
+  // tcp payload containing ssl
   total_header_len = eth_header_len + ip_header_len + protocol_header_len; // Total offset for payload
   payload_len = packet_header.len - total_header_len; // Payload length
 
@@ -143,6 +149,7 @@ void payload_analyze(const u_char *packet, struct pcap_pkthdr packet_header) {
   int dst_port = (ports&0x00FF0000)>>8 | (ports&0xFF000000)>>24;
   cout<<"Destination Port: "<<dst_port<<endl;
 
+  // check if its a standard https port (other ssl ports for protocols like ftp, telnet can be considered here)
   if(src_port==443 || dst_port==443) {
     cout<<"SSL encryption!"<<endl;
     analyze_ssl(packet+tcp_off+protocol_header_len, payload_len);
@@ -211,11 +218,12 @@ void endpacket() {
   cout<<endl;
 }
 
+// read ssl packet
 void analyze_ssl(const u_char *ssl, int payload_len) {
   int parsed = 0;
   while(payload_len-parsed > 0) {
     cout<<endl;
-    // print_payload(ssl, payload_len);
+    // Record layer headers: type, version, length
     int type, version, length;
     type = (*(int *)ssl&0x00FF);
     version = *(int *)(ssl+1) & 0xFFFF;
@@ -270,6 +278,8 @@ void analyze_ssl(const u_char *ssl, int payload_len) {
   return;
 }
 
+
+// SSL subprotocol: alert packet parsing: alert.h
 void manage_alert(const u_char *alert, int length)
 {
   cout<<"ALERT"<<endl;
@@ -291,19 +301,24 @@ void manage_alert(const u_char *alert, int length)
   return;
 }
 
+
+// SSL subprotocol: APPLICATION_DATA packet parsing
 void manage_data(const u_char *data, int length)
 {
   cout<<"APPLICATION_DATA"<<endl;
-  // print_payload(data, length);
+  print_payload(data, length);
   return;
 }
 
+
+// SSL subprotocol: HANDSHAKE packet parsing: handshake.h
 void manage_handshake(const u_char *handshake, int length)
 {
   cout<<"HANDSHAKE"<<endl;
   handshake_type(handshake, length);
 }
 
+// SSL subprotocol: CCS packet parsing
 void manage_ccs(const u_char *ccs, int length) {
   cout<<"CHANGE_CIPHER_SPEC"<<endl;
   return;
